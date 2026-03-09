@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, Users, Heart, LogOut, CheckCircle, 
   Briefcase, Store, Award, Layers, HelpCircle, Target, FileCheck, 
-  FileEdit, MessageSquare, UserPlus 
+  FileEdit, MessageSquare, UserPlus // <-- NEW: Imported UserPlus icon
 } from "lucide-react";
 import axios from "axios";
 import "./AdminSidebar.css";
@@ -33,19 +33,19 @@ export default function AdminSidebar() {
       if (!token) return;
       const headers = { Authorization: token };
       
-      // UPDATED: Using localhost:5000 for local development
+      // UPDATED: Now using http://localhost:5000
       const [statsRes, phase1Res, phase2Res, pendingDataRes] = await Promise.all([
         axios.get("http://localhost:5000/api/admin/stats", { headers }),
         axios.get("http://localhost:5000/api/admin/interest/workflow?status=PendingAdminPhase1", { headers }),
         axios.get("http://localhost:5000/api/admin/interest/workflow?status=PendingAdminPhase2", { headers }),
-        axios.get("http://localhost:5000/api/admin/pending-data", { headers })
+        axios.get("http://localhost:5000/api/admin/pending-data", { headers }) 
       ]);
       
       setStats({
         pendingReg: statsRes.data.success ? statsRes.data.stats.actionQueue.pendingRegistrationPayments : 0,
         newRequests: phase1Res.data.success ? phase1Res.data.data.length : 0,
         acceptedMatches: phase2Res.data.success ? phase2Res.data.data.length : 0,
-        pendingData: pendingDataRes.data.success ? pendingDataRes.data.data.length : 0,
+        pendingData: pendingDataRes.data.success ? pendingDataRes.data.data.length : 0, 
       });
 
     } catch (e) {
@@ -105,7 +105,9 @@ export default function AdminSidebar() {
     },
     { id: "manage-pages", path: "/admin/page-content", icon: <FileEdit size={20} />, label: "Manage Pages" },
     { id: "testimonials", path: "/admin/add-testimonial", icon: <MessageSquare size={20} />, label: "Testimonials" },
-    { id: "create-moderator", path: "/admin/moderater", icon: <UserPlus size={20} />, label: "Create Moderator" } 
+    
+    // NEW: Added the Create Moderator link here
+    { id: "create-moderator", path: "/admin/moderater", icon: <UserPlus size={20} />, label: "Create Moderator" }
   ];
 
   // 2. Filter links based on role & permissions
