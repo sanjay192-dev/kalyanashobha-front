@@ -39,6 +39,7 @@ import AdminVendor from "./Admin/VendorManagement/VendorManagement.jsx";
 import AddCommunity from "./Admin/AddCommunity/AddCommunity.jsx";
 import AdminVendorLeads from "./Admin/AdminVendorLeads/AdminVendorLeads.jsx"; 
 import AdminHelpCenter from "./Admin/AdminHelpCenter/AdminHelpCenter.jsx"; 
+import CreateModerator from "./Admin/CreateModerator.jsx"; 
 
 import AdminPageContent from "./Admin/AdminPageContent/AdminPageContent.jsx";
 
@@ -144,7 +145,7 @@ function App() {
       <Route path="data-approval" element={<DataApproval/>} />
     <Route path="page-content" element={<AdminPageContent/>} />
    <Route path="add-testimonial" element={<AdminPostTestimonial/>} />
-    
+   <Route path="moderater" element={<CreateModerator/>} />
     
     
       </Route>

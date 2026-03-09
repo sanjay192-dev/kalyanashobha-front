@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, Users, Heart, LogOut, CheckCircle, 
   Briefcase, Store, Award, Layers, HelpCircle, Target, FileCheck, 
-  FileEdit, MessageSquare 
+  FileEdit, MessageSquare, UserPlus 
 } from "lucide-react";
 import axios from "axios";
 import "./AdminSidebar.css";
@@ -12,13 +12,20 @@ export default function AdminSidebar() {
   const navigate = useNavigate();
   const location = useLocation(); 
   
-  // Update state to hold specific tab counts
   const [stats, setStats] = useState({ 
     pendingReg: 0,
-    newRequests: 0,      // Phase 1
-    acceptedMatches: 0,  // Phase 2
-    pendingData: 0       // NEW: For Data Approvals
+    newRequests: 0,      
+    acceptedMatches: 0,  
+    pendingData: 0       
   });
+
+  // Get the admin info to check role and permissions
+  const [adminInfo, setAdminInfo] = useState(null);
+
+  useEffect(() => {
+    const info = JSON.parse(localStorage.getItem('adminInfo'));
+    if (info) setAdminInfo(info);
+  }, []);
 
   const fetchCounts = async () => {
     try {
@@ -26,19 +33,19 @@ export default function AdminSidebar() {
       if (!token) return;
       const headers = { Authorization: token };
       
-      // Fetch both the stats and the specific tab data simultaneously 
+      // UPDATED: Using localhost:5000 for local development
       const [statsRes, phase1Res, phase2Res, pendingDataRes] = await Promise.all([
-        axios.get("https://kalyanashobha-back.vercel.app/api/admin/stats", { headers }),
-        axios.get("https://kalyanashobha-back.vercel.app/api/admin/interest/workflow?status=PendingAdminPhase1", { headers }),
-        axios.get("https://kalyanashobha-back.vercel.app/api/admin/interest/workflow?status=PendingAdminPhase2", { headers }),
-        axios.get("https://kalyanashobha-back.vercel.app/api/admin/pending-data", { headers }) // NEW: Fetching pending data
+        axios.get("http://localhost:5000/api/admin/stats", { headers }),
+        axios.get("http://localhost:5000/api/admin/interest/workflow?status=PendingAdminPhase1", { headers }),
+        axios.get("http://localhost:5000/api/admin/interest/workflow?status=PendingAdminPhase2", { headers }),
+        axios.get("http://localhost:5000/api/admin/pending-data", { headers })
       ]);
       
       setStats({
         pendingReg: statsRes.data.success ? statsRes.data.stats.actionQueue.pendingRegistrationPayments : 0,
         newRequests: phase1Res.data.success ? phase1Res.data.data.length : 0,
         acceptedMatches: phase2Res.data.success ? phase2Res.data.data.length : 0,
-        pendingData: pendingDataRes.data.success ? pendingDataRes.data.data.length : 0, // NEW: Setting count
+        pendingData: pendingDataRes.data.success ? pendingDataRes.data.data.length : 0,
       });
 
     } catch (e) {
@@ -63,8 +70,52 @@ export default function AdminSidebar() {
     navigate('/admin/login');
   };
 
-  // Calculate the total actionable interests for the main badge
   const totalPendingInterests = stats.newRequests + stats.acceptedMatches;
+
+  // 1. Define all available sidebar links
+  const allLinks = [
+    { id: "dashboard", path: "/admin/dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard" },
+    { id: "users", path: "/admin/users", icon: <Users size={20} />, label: "User Registry" },
+    { 
+      id: "reg-approvals", 
+      path: "/admin/registration-approvals", 
+      icon: <CheckCircle size={20} />, 
+      label: "Reg. Approvals", 
+      badge: stats.pendingReg 
+    },
+    { 
+      id: "interest-approvals", 
+      path: "/admin/interest-approvals", 
+      icon: <Heart size={20} />, 
+      label: "Interest Approvals", 
+      badge: totalPendingInterests 
+    },
+    { id: "agents", path: "/admin/agents", icon: <Briefcase size={20} />, label: "Agents" },
+    { id: "vendors", path: "/admin/vendors", icon: <Store size={20} />, label: "Vendors" },
+    { id: "user-certificates", path: "/admin/user-certificates", icon: <Award size={20} />, label: "User Acceptance" },
+    { id: "add-data", path: "/admin/add-fields", icon: <Layers size={20} />, label: "Add Data" },
+    { id: "vendor-leads", path: "/admin/vendor-leads", icon: <Target size={20} />, label: "Vendor Leads" },
+    { id: "help-center", path: "/admin/help-center", icon: <HelpCircle size={20} />, label: "Help Center" },
+    { 
+      id: "data-approval", 
+      path: "/admin/data-approval", 
+      icon: <FileCheck size={20} />, 
+      label: "Data Approval",
+      badge: stats.pendingData 
+    },
+    { id: "manage-pages", path: "/admin/page-content", icon: <FileEdit size={20} />, label: "Manage Pages" },
+    { id: "testimonials", path: "/admin/add-testimonial", icon: <MessageSquare size={20} />, label: "Testimonials" },
+    { id: "create-moderator", path: "/admin/moderater", icon: <UserPlus size={20} />, label: "Create Moderator" } 
+  ];
+
+  // 2. Filter links based on role & permissions
+  const filteredLinks = allLinks.filter(link => {
+    if (!adminInfo) return false;
+    // SuperAdmin sees everything
+    if (adminInfo.role === 'SuperAdmin') return true;
+    // Moderator only sees what is in their permissions array
+    return adminInfo.permissions?.includes(link.id);
+  });
 
   return (
     <aside className="ks-sidebar-container">
@@ -75,124 +126,20 @@ export default function AdminSidebar() {
 
       <nav className="ks-sidebar-nav">
         <ul>
-          <li>
-            <NavLink to="/admin/dashboard" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <LayoutDashboard size={20} />
-              <span>Dashboard</span>
-            </NavLink>
-          </li>
-          
-          <li>
-            <NavLink to="/admin/users" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <Users size={20} />
-              <span>User Registry</span>
-            </NavLink>
-          </li>
-
-          {/* Registration Approvals */}
-          <li>
-            <NavLink to="/admin/registration-approvals" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <CheckCircle size={20} />
-                {stats.pendingReg > 0 && (
-                  <span className="ks-notification-badge">{stats.pendingReg}</span>
-                )}
-              </div>
-              <span>Reg. Approvals</span>
-            </NavLink>
-          </li>
-
-           {/* Interest Approvals */}
-          <li>
-            <NavLink to="/admin/interest-approvals" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <Heart size={20} />
-                {totalPendingInterests > 0 && (
-                  <span className="ks-notification-badge">{totalPendingInterests}</span>
-                )}
-              </div>
-              <span>Interest Approvals</span>
-            </NavLink>
-          </li>
-
-          {/* Agents */}
-          <li>
-            <NavLink to="/admin/agents" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <Briefcase size={20} />
-              <span>Agents</span>
-            </NavLink>
-          </li>
-
-          {/* Vendors */}
-          <li>
-            <NavLink to="/admin/vendors" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <Store size={20} />
-              <span>Vendors</span>
-            </NavLink>
-          </li>
-
-          {/* User Acceptance */}
-          <li>
-            <NavLink to="/admin/user-certificates" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <Award size={20} /> 
-              <span>User Acceptance</span>
-            </NavLink>
-          </li>
-          
-          {/* Add Community */}
-          <li>
-            <NavLink to="/admin/add-fields" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <Layers size={20} /> 
-              <span>Add Data</span>
-            </NavLink>
-          </li>
-          
-          {/* Vendor Leads */}
-          <li>
-            <NavLink to="/admin/vendor-leads" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <Target size={20} /> 
-              <span>Vendor Leads</span>
-            </NavLink>
-          </li>
-
-          {/* Help Center */}
-          <li>
-            <NavLink to="/admin/help-center" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <HelpCircle size={20} /> 
-              <span>Help Center</span>
-            </NavLink>
-          </li>
-
-          {/* Data Approval */}
-          <li>
-            <NavLink to="/admin/data-approval" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              {/* NEW: Added Badge Container for Data Approval */}
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <FileCheck size={20} /> 
-                {stats.pendingData > 0 && (
-                  <span className="ks-notification-badge">{stats.pendingData}</span>
-                )}
-              </div>
-              <span>Data Approval</span>
-            </NavLink>
-          </li>
-
-          {/* Manage Pages */}
-          <li>
-            <NavLink to="/admin/page-content" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <FileEdit size={20} /> 
-              <span>Manage Pages</span>
-            </NavLink>
-          </li>
-
-          {/* Add Testimonial */}
-          <li>
-            <NavLink to="/admin/add-testimonial" className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
-              <MessageSquare size={20} /> 
-              <span>Testimonials</span>
-            </NavLink>
-          </li>
-
+          {/* 3. Map through the filtered links to render them */}
+          {filteredLinks.map((link) => (
+            <li key={link.id}>
+              <NavLink to={link.path} className={({ isActive }) => (isActive ? "ks-nav-link active" : "ks-nav-link")}>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  {link.icon}
+                  {link.badge > 0 && (
+                    <span className="ks-notification-badge">{link.badge}</span>
+                  )}
+                </div>
+                <span>{link.label}</span>
+              </NavLink>
+            </li>
+          ))}
         </ul>
       </nav>
 
