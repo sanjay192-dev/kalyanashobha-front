@@ -64,7 +64,8 @@ export default function CreateModerator() {
     try {
       const token = localStorage.getItem('adminToken');
       const response = await axios.post(
-        'https://kalyanashobha-back.vercel.app/api/admin/create-moderator',
+        // UPDATED: Now points to your local server
+        'http://localhost:5000/api/admin/create-moderator',
         {
           ...formData,
           permissions: selectedPermissions
