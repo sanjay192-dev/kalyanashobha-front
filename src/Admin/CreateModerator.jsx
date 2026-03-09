@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './CreateModerator.css'; // You can create this for custom styling
+import './CreateModerator.css'; 
 
 export default function CreateModerator() {
   const [formData, setFormData] = useState({
@@ -13,7 +13,7 @@ export default function CreateModerator() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(false);
 
-  // These IDs MUST match the link.id from your AdminSidebar allLinks array
+  // These IDs MUST exactly match the link.id from your AdminSidebar allLinks array
   const availablePermissions = [
     { id: "dashboard", label: "Dashboard" },
     { id: "users", label: "User Registry" },
@@ -76,7 +76,6 @@ export default function CreateModerator() {
 
       if (response.data.success) {
         setMessage({ type: 'success', text: 'Moderator created successfully!' });
-        // Clear form on success
         setFormData({ username: '', email: '', password: '' });
         setSelectedPermissions([]);
       }
