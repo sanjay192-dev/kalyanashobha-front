@@ -19,8 +19,8 @@ const AdminLogin = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
-    // Base URL
-    const API_BASE = "https://kalyanashobha-back.vercel.app/api/admin/auth";
+    // UPDATED: Now pointing to local backend to get the permissions array
+    const API_BASE = "http://localhost:5000/api/admin/auth";
 
     // ==================== LOGIN WORKFLOW ====================
 
@@ -50,6 +50,7 @@ const AdminLogin = () => {
         try {
             const res = await axios.post(`${API_BASE}/login-verify`, { email, otp });
             if (res.data.success) {
+                // This will now properly save the permissions array from your local backend
                 localStorage.setItem('adminToken', res.data.token);
                 localStorage.setItem('adminInfo', JSON.stringify(res.data.admin));
 
